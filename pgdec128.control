@@ -1,5 +1,5 @@
 # pgdec128 extension
 comment = 'foreign-data wrapper for dec128'
-default_version = '1.1'
+default_version = '1.0'
 module_pathname = '$libdir/pgdec128'
 relocatable = true

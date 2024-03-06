@@ -1,6 +1,6 @@
 # contrib/pgdec128/Makefile
 EXTENSION = pgdec128
-DATA = pgdec128--1.0.sql pgdec128--1.0--1.1.sql
+DATA = pgdec128--1.0.sql
 
 MODULE_big = pgdec128
 OBJS = \

@@ -1,18 +1,33 @@
 /* contrib/postgres_fdw/postgres_fdw--1.0.sql */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "CREATE EXTENSION kite_fdw" to load this file. \quit
+\echo Use "CREATE EXTENSION pgdec128" to load this file. \quit
 
-CREATE FUNCTION kite_fdw_handler()
-RETURNS fdw_handler
-AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT;
+-- type
 
-CREATE FUNCTION kite_fdw_validator(text[], oid)
-RETURNS void
-AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT;
+CREATE TYPE dec128;
 
-CREATE FOREIGN DATA WRAPPER kite_fdw
-  HANDLER kite_fdw_handler
-  VALIDATOR kite_fdw_validator;
+CREATE FUNCTION dec128_in(cstring, oid, integer) RETURNS dec128
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_out(dec128) RETURNS cstring
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_typmod_in(cstring[]) RETURNS integer
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_recv(internal, oid, integer) RETURNS dec128
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_send(dec128) RETURNS bytea
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE TYPE dec128 (
+	INPUT     = dec128_in,
+	OUTPUT    = dec128_out,
+	TYPMOD_IN = dec128_typmod_in,
+	RECEIVE   = dec128_recv,
+	SEND      = dec128_send,
+	STORAGE   = external
+);
+
