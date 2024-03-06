@@ -89,8 +89,51 @@ dec128_in(PG_FUNCTION_ARGS)
 {
 	char	*lit = PG_GETARG_CSTRING(0);
 	int32	typmod = PG_GETARG_INT32(2);
+	int precision, scale;
+	int tgt_precision, tgt_scale;
+	decimal_status_t s;
 
-	PG_RETURN_POINTER(NULL);
+	dec128_t *dec = (dec128_t *) palloc(sizeof(dec128_t));;
+	s = dec128_from_string(lit, &dec->x, &precision, &scale);
+	if (s != DEC128_STATUS_SUCCESS) {
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("dec128 conversion failure")));
+	}
+
+	tgt_precision = dec128_typmod_precision(typmod);
+	tgt_scale = dec128_typmod_scale(typmod);
+	
+	if (tgt_precision < precision) {
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("source precision is bigger than target precision")));
+	}
+
+	if (tgt_scale < scale) {
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("source scale is bigger than target scale.  Possible Precision loss.")));
+	}
+
+	if (tgt_scale != scale) {
+		int delta = tgt_scale - scale;
+		int new_precision = precision + delta;
+		if (new_precision > tgt_precision) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("source precision is bigger than target precision after rescale.")));
+		}
+
+		dec->x = dec128_increase_scale_by(dec->x, delta);
+		dec->scale = (int16) tgt_scale;
+		dec->precision = (int16) new_precision;
+	} else {
+		dec->scale = (int16) tgt_scale;
+		dec->precision = (int16) tgt_precision;
+	}
+
+	PG_RETURN_POINTER(dec);
 }
 
 /*
@@ -100,9 +143,15 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_out);
 Datum
 dec128_out(PG_FUNCTION_ARGS)
 {
-	decimal128_t   *dec = (decimal128_t *) PG_GETARG_POINTER(0);
+	dec128_t   *dec = (dec128_t *) PG_GETARG_POINTER(0);
+	char output[DEC128_MAX_STRLEN];
+	char *res = 0;
 
-	PG_RETURN_CSTRING("1.23");
+	dec128_to_string(dec->x, output, dec->scale);
+	res = pstrdup(output);
+
+	elog(LOG, "dec128_out = %s", res);
+	PG_RETURN_CSTRING(res);
 }
 
 
@@ -116,27 +165,34 @@ dec128_typmod_in(PG_FUNCTION_ARGS)
 	ArrayType  *ta = PG_GETARG_ARRAYTYPE_P(0);
 	int32	   *tl;
 	int			n;
+	int precision, scale, typmod;
 
 	tl = ArrayGetIntegerTypmods(ta, &n);
 
-	if (n != 1)
+	if (n != 2)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid type modifier")));
 
-	if (*tl < 1)
+	precision = tl[0];
+	scale = tl[1];
+
+	if (precision < 0 || precision > 38) {
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("dimensions for type vector must be at least 1")));
+				 errmsg("precision must be between 0 and 38")));
+	}
 
-#if 0
-	if (*tl > VECTOR_MAX_DIM)
+	if (scale < 0 || scale > precision) {
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("dimensions for type vector cannot exceed %d", VECTOR_MAX_DIM)));
-#endif
+				 errmsg("scale must be smaller than precision and bigger than 0")));
+	}
 
-	PG_RETURN_INT32(*tl);
+	typmod = make_dec128_typmod(precision, scale);
+	elog(LOG, "precision = %d, scale = %d", precision, scale);
+
+	PG_RETURN_INT32(typmod);
 }
 
 /*
@@ -148,28 +204,22 @@ dec128_recv(PG_FUNCTION_ARGS)
 {
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
 	int32		typmod = PG_GETARG_INT32(2);
-	decimal128_t	   *result;
-	int16		dim;
-	int16		unused;
+	dec128_t	   *result;
+	int16		precision;
+	int16		scale;
+	uint64_t        lo;
+	int64_t         hi;
 
-	dim = pq_getmsgint(buf, sizeof(int16));
-	unused = pq_getmsgint(buf, sizeof(int16));
+	precision = pq_getmsgint(buf, sizeof(int16));
+	scale = pq_getmsgint(buf, sizeof(int16));
 
-	//CheckDim(dim);
-	//CheckExpectedDim(typmod, dim);
+	result = (dec128_t *) palloc(sizeof(dec128_t));
+	lo = pq_getmsgint(buf, sizeof(int64_t));
+	hi = pq_getmsgint(buf, sizeof(int64_t));
 
-	if (unused != 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("expected unused to be 0, not %d", unused)));
-
-	result = 0;
-	//result = InitVector(dim);
-	for (int i = 0; i < dim; i++)
-	{
-		//result->x[i] = pq_getmsgfloat4(buf);
-		//CheckElement(result->x[i]);
-	}
+	result->x = dec128_from_hilo(hi, lo);
+	result->precision = precision;
+	result->scale = scale;
 
 	PG_RETURN_POINTER(result);
 }
@@ -182,16 +232,20 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_send);
 Datum
 dec128_send(PG_FUNCTION_ARGS)
 {
-	decimal128_t	   *dec = (decimal128_t *) PG_GETARG_POINTER(0);
+	dec128_t	   *dec = (dec128_t *) PG_GETARG_POINTER(0);
 	StringInfoData buf;
+	uint64_t lo;
+	int64_t hi;
 
 	pq_begintypsend(&buf);
-	/*
-	pq_sendint(&buf, vec->dim, sizeof(int16));
-	pq_sendint(&buf, vec->unused, sizeof(int16));
-	for (int i = 0; i < vec->dim; i++)
-		pq_sendfloat4(&buf, vec->x[i]);
-	*/
+	pq_sendint(&buf, dec->precision, sizeof(int16));
+	pq_sendint(&buf, dec->scale, sizeof(int16));
+
+	lo = dec128_low_bits(dec->x);
+	hi = dec128_high_bits(dec->x);
+
+	pq_sendint(&buf, lo, sizeof(int64));
+	pq_sendint(&buf, hi, sizeof(int64));
 
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
