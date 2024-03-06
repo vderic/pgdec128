@@ -107,7 +107,11 @@ dec128_in(PG_FUNCTION_ARGS)
 	elog(LOG, "IN: precision %d scale %d", precision, scale);
 
 	if (! is_valid_dec128_typmod(typmod)) {
-		elog(LOG, "IN: typmod is invalid %d", typmod);
+		if (precision > 38) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("precision is bigger than max precision 38")));
+		}
 		PG_RETURN_POINTER(dec);
 	}
 
