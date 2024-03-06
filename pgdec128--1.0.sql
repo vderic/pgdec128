@@ -29,6 +29,6 @@ CREATE TYPE dec128 (
 	TYPMOD_IN = dec128_typmod_in,
 	RECEIVE   = dec128_recv,
 	SEND      = dec128_send,
-	ALIGNMENT = 4
+	ALIGNMENT = int4
 );
 

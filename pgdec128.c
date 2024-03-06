@@ -101,9 +101,21 @@ dec128_in(PG_FUNCTION_ARGS)
 				 errmsg("dec128 conversion failure")));
 	}
 
+	dec->precision = (int16) precision;
+	dec->scale = (int16) scale;
+
+	elog(LOG, "IN: precision %d scale %d", precision, scale);
+
+	if (! is_valid_dec128_typmod(typmod)) {
+		elog(LOG, "IN: typmod is invalid %d", typmod);
+		PG_RETURN_POINTER(dec);
+	}
+
 	tgt_precision = dec128_typmod_precision(typmod);
 	tgt_scale = dec128_typmod_scale(typmod);
 	
+	elog(LOG, "IN: target precision %d scale %d", tgt_precision, tgt_scale);
+
 	if (tgt_precision < precision) {
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -190,7 +202,7 @@ dec128_typmod_in(PG_FUNCTION_ARGS)
 	}
 
 	typmod = make_dec128_typmod(precision, scale);
-	elog(LOG, "precision = %d, scale = %d", precision, scale);
+	elog(LOG, "precision = %d, scale = %d, typmod=%d", precision, scale, typmod);
 
 	PG_RETURN_INT32(typmod);
 }
