@@ -5,7 +5,6 @@
 
 typedef struct dec128_t
 {
-	int32 vl_len_;     /* varlena header (do not touch directly!) */
 	int16 precision;
 	int16 scale;
 	decimal128_t x;

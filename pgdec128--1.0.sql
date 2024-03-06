@@ -23,11 +23,12 @@ CREATE FUNCTION dec128_send(dec128) RETURNS bytea
 	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE TYPE dec128 (
+	INTERNALLENGTH = 20,
 	INPUT     = dec128_in,
 	OUTPUT    = dec128_out,
 	TYPMOD_IN = dec128_typmod_in,
 	RECEIVE   = dec128_recv,
 	SEND      = dec128_send,
-	STORAGE   = external
+	ALIGNMENT = int
 );
 
