@@ -214,8 +214,8 @@ dec128_recv(PG_FUNCTION_ARGS)
 	scale = pq_getmsgint(buf, sizeof(int16));
 
 	result = (dec128_t *) palloc(sizeof(dec128_t));
-	lo = pq_getmsgint(buf, sizeof(int64_t));
-	hi = pq_getmsgint(buf, sizeof(int64_t));
+	lo = (uint64_t) pq_getmsgint64(buf);
+	hi = pq_getmsgint64(buf);
 
 	result->x = dec128_from_hilo(hi, lo);
 	result->precision = precision;
@@ -244,8 +244,8 @@ dec128_send(PG_FUNCTION_ARGS)
 	lo = dec128_low_bits(dec->x);
 	hi = dec128_high_bits(dec->x);
 
-	pq_sendint(&buf, lo, sizeof(int64));
-	pq_sendint(&buf, hi, sizeof(int64));
+	pq_sendint64(&buf, lo);
+	pq_sendint64(&buf, hi);
 
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
