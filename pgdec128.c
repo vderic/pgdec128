@@ -25,9 +25,6 @@
 #define TYPALIGN_INT 'i'
 #endif
 
-#define STATE_DIMS(x) (ARR_DIMS(x)[0] - 1)
-#define CreateStateDatums(dim) palloc(sizeof(Datum) * (dim + 1))
-
 PG_MODULE_MAGIC;
 
 /*
@@ -104,8 +101,6 @@ dec128_in(PG_FUNCTION_ARGS)
 	dec->precision = (int16) precision;
 	dec->scale = (int16) scale;
 
-	elog(LOG, "IN: precision %d scale %d", precision, scale);
-
 	if (! is_valid_dec128_typmod(typmod)) {
 		if (precision > 38) {
 			ereport(ERROR,
@@ -117,8 +112,6 @@ dec128_in(PG_FUNCTION_ARGS)
 
 	tgt_precision = dec128_typmod_precision(typmod);
 	tgt_scale = dec128_typmod_scale(typmod);
-	
-	elog(LOG, "IN: target precision %d scale %d", tgt_precision, tgt_scale);
 
 	if (tgt_precision < precision) {
 		ereport(ERROR,
@@ -166,7 +159,6 @@ dec128_out(PG_FUNCTION_ARGS)
 	dec128_to_string(dec->x, output, dec->scale);
 	res = pstrdup(output);
 
-	elog(LOG, "dec128_out = %s", res);
 	PG_RETURN_CSTRING(res);
 }
 
@@ -206,7 +198,6 @@ dec128_typmod_in(PG_FUNCTION_ARGS)
 	}
 
 	typmod = make_dec128_typmod(precision, scale);
-	elog(LOG, "precision = %d, scale = %d, typmod=%d", precision, scale, typmod);
 
 	PG_RETURN_INT32(typmod);
 }
