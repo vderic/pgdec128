@@ -14,7 +14,7 @@
 #include "utils/float.h"
 #include "utils/lsyscache.h"
 #include "utils/numeric.h"
-#include "decimal/basic_decimal.h"
+#include "pgdec128.h"
 
 #if PG_VERSION_NUM >= 160000
 #include "varatt.h"
@@ -37,6 +37,47 @@ PGDLLEXPORT void _PG_init(void);
 void
 _PG_init(void)
 {
+}
+
+static inline int32
+make_dec128_typmod(int precision, int scale)
+{
+	return ((precision << 16) | (scale & 0x7ff)) + VARHDRSZ;
+}
+
+/*
+ * Because of the offset, valid numeric typmods are at least VARHDRSZ
+ */
+static inline bool
+is_valid_dec128_typmod(int32 typmod)
+{
+	return typmod >= (int32) VARHDRSZ;
+}
+
+/*
+ * numeric_typmod_precision() -
+ *
+ *	Extract the precision from a numeric typmod --- see make_numeric_typmod().
+ */
+static inline int
+dec128_typmod_precision(int32 typmod)
+{
+	return ((typmod - VARHDRSZ) >> 16) & 0xffff;
+}
+
+/*
+ * numeric_typmod_scale() -
+ *
+ *	Extract the scale from a numeric typmod --- see make_numeric_typmod().
+ *
+ *	Note that the scale may be negative, so we must do sign extension when
+ *	unpacking it.  We do this using the bit hack (x^1024)-1024, which sign
+ *	extends an 11-bit two's complement number x.
+ */
+static inline int
+dec128_typmod_scale(int32 typmod)
+{
+	return (((typmod - VARHDRSZ) & 0x7ff) ^ 1024) - 1024;
 }
 
 /*
