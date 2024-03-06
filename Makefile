@@ -1,35 +1,22 @@
 # contrib/pgdec128/Makefile
+EXTENSION = pgdec128
+DATA = pgdec128--1.0.sql pgdec128--1.0--1.1.sql
 
 MODULE_big = pgdec128
 OBJS = \
 	$(WIN32RES) \
-	connection.o \
-	deparse.o \
-	option.o \
-	kite_fdw.o \
-	shippable.o \
-	decimal.o \
-	schema.o \
-	decode.o \
-	op.o \
-	numeric.o \
-	dec.o \
-	exx_int.o \
-	agg.o \
-	vector.o
+	pgdec128.o
 
 all: ext $(OBJS)
 
 ext:
 	make -C ext
 
-PGFILEDESC = "postgres_fdw - foreign data wrapper for PostgreSQL"
+PGFILEDESC = "pgdec128 - decimal 128 for PostgreSQL"
 
 PG_CPPFLAGS = -I$(libpq_srcdir) -Iext/include
 SHLIB_LINK_INTERNAL = $(libpq) -Lext/lib -ldec128 -lstdc++ -std=c++17
 
-EXTENSION = pgdec128
-DATA = pgdec128--1.0.sql pgdec128--1.0--1.1.sql
 
 REGRESS = pgdec128
 
