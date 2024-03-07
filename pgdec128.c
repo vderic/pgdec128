@@ -346,4 +346,104 @@ dec128mod(PG_FUNCTION_ARGS)
         PG_RETURN_POINTER(res);
 }
 
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128eq);
+Datum
+dec128eq(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+	decimal128_t aa = a->x;
+	decimal128_t bb = b->x;
 
+	if (a->scale > b->scale) {
+                bb = dec128_increase_scale_by(b->x, a->scale - b->scale);
+        } else if (b->scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, b->scale - a->scale);
+        }
+	PG_RETURN_BOOL(dec128_cmpeq(aa, bb));
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128ne);
+Datum
+dec128ne(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        decimal128_t aa = a->x;
+        decimal128_t bb = b->x;
+
+        if (a->scale > b->scale) {
+                bb = dec128_increase_scale_by(b->x, a->scale - b->scale);
+        } else if (b->scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, b->scale - a->scale);
+        }
+        PG_RETURN_BOOL(dec128_cmpne(aa, bb));
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128lt);
+Datum
+dec128lt(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        decimal128_t aa = a->x;
+        decimal128_t bb = b->x;
+
+        if (a->scale > b->scale) {
+                bb = dec128_increase_scale_by(b->x, a->scale - b->scale);
+        } else if (b->scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, b->scale - a->scale);
+        }
+        PG_RETURN_BOOL(dec128_cmplt(aa, bb));
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128gt);
+Datum
+dec128gt(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        decimal128_t aa = a->x;
+        decimal128_t bb = b->x;
+
+        if (a->scale > b->scale) {
+                bb = dec128_increase_scale_by(b->x, a->scale - b->scale);
+        } else if (b->scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, b->scale - a->scale);
+        }
+        PG_RETURN_BOOL(dec128_cmpgt(aa, bb));
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128ge);
+Datum
+dec128ge(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        decimal128_t aa = a->x;
+        decimal128_t bb = b->x;
+
+        if (a->scale > b->scale) {
+                bb = dec128_increase_scale_by(b->x, a->scale - b->scale);
+        } else if (b->scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, b->scale - a->scale);
+        }
+        PG_RETURN_BOOL(dec128_cmpge(aa, bb));
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128le);
+Datum
+dec128le(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        decimal128_t aa = a->x;
+        decimal128_t bb = b->x;
+
+        if (a->scale > b->scale) {
+                bb = dec128_increase_scale_by(b->x, a->scale - b->scale);
+        } else if (b->scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, b->scale - a->scale);
+        }
+        PG_RETURN_BOOL(dec128_cmple(aa, bb));
+}
