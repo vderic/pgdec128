@@ -126,3 +126,13 @@ CREATE OPERATOR > (
         COMMUTATOR = > , NEGATOR = <= ,
         RESTRICT = scalargtsel, JOIN = scalargtjoinsel
 );
+
+-- aggregates
+
+CREATE AGGREGATE sum(dec128) (
+	SFUNC = dec128pl,
+	STYPE = dec128,
+	COMBINEFUNC = dec128pl,
+	PARALLEL = SAFE
+);
+
