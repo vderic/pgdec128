@@ -98,8 +98,8 @@ dec128_in(PG_FUNCTION_ARGS)
 				 errmsg("dec128 conversion failure")));
 	}
 
-	dec->precision = (int16) precision;
-	dec->scale = (int16) scale;
+	dec->precision = precision;
+	dec->scale = scale;
 
 	if (precision > 38) {
 		ereport(ERROR,
@@ -199,13 +199,13 @@ dec128_recv(PG_FUNCTION_ARGS)
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
 	int32		typmod = PG_GETARG_INT32(2);
 	dec128_t	   *result;
-	int16		precision;
-	int16		scale;
+	int32		precision;
+	int32		scale;
 	uint64_t        lo;
 	int64_t         hi;
 
-	precision = pq_getmsgint(buf, sizeof(int16));
-	scale = pq_getmsgint(buf, sizeof(int16));
+	precision = pq_getmsgint(buf, sizeof(int32));
+	scale = pq_getmsgint(buf, sizeof(int32));
 
 	result = (dec128_t *) palloc(sizeof(dec128_t));
 	lo = (uint64_t) pq_getmsgint64(buf);
@@ -252,8 +252,8 @@ dec128_send(PG_FUNCTION_ARGS)
 	int64_t hi;
 
 	pq_begintypsend(&buf);
-	pq_sendint(&buf, dec->precision, sizeof(int16));
-	pq_sendint(&buf, dec->scale, sizeof(int16));
+	pq_sendint(&buf, dec->precision, sizeof(int32));
+	pq_sendint(&buf, dec->scale, sizeof(int32));
 
 	lo = dec128_low_bits(dec->x);
 	pq_sendint64(&buf, lo);
@@ -264,5 +264,20 @@ dec128_send(PG_FUNCTION_ARGS)
 	}
 
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
+}
+
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128pl);
+Datum
+dec128pl(PG_FUNCTION_ARGS)
+{
+	dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+	dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+	dec128_t *res = (dec128_t *) palloc(sizeof(dec128_t));
+
+	dec128_ADD_SUB_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
+	res->x = dec128_sum(a->x, b->x);
+	elog(LOG, "dec128pl: p1 %d s1 %d p2 %d s2 %d, p %d scale %d", a->precision, a->scale, b->precision, b->scale, res->precision, res->scale);
+	PG_RETURN_POINTER(res);
 }
 
