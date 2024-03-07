@@ -10,4 +10,12 @@ typedef struct dec128_t
 	decimal128_t x;
 } dec128_t;
 
+typedef struct dec128_accumstate_t
+{
+	int32 precision;
+	int32 scale;
+	decimal128_t sumx;
+	int64_t count;
+} dec128_accumstate_t;
+
 #endif

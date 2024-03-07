@@ -78,6 +78,28 @@ dec128_typmod_scale(int32 typmod)
 }
 
 /*
+ * dec128_accumstate dummy functions
+ */
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_accumstate_in);
+Datum
+dec128_accumstate_in(PG_FUNCTION_ARGS)
+{
+	char	*lit = PG_GETARG_CSTRING(0);
+	dec128_accumstate_t *accum = (dec128_accumstate_t *) palloc0(sizeof(dec128_accumstate_t));
+
+	elog(LOG,"accumstate_in: INIT %s", lit);
+
+	PG_RETURN_POINTER(accum);
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_accumstate_out);
+Datum
+dec128_accumstate_out(PG_FUNCTION_ARGS)
+{
+        PG_RETURN_POINTER(NULL);
+}
+
+/*
  * Convert textual representation to internal representation
  */
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_in);
@@ -405,15 +427,109 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_accum);
 Datum
 dec128_accum(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_POINTER(NULL);
+        dec128_accumstate_t           *accum = (dec128_accumstate_t *) PG_GETARG_POINTER(0);
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(1);
+	int precision, scale;
+	decimal128_t aa, sumx;
+
+	if (accum == NULL) {
+		elog(LOG, "accum: Null accumstate");
+		accum = (dec128_accumstate_t *) palloc0(sizeof(dec128_accumstate_t));
+	}
+
+	if (accum->count == 0) {
+		elog(LOG, "accum: Count 0 accumstate");
+		accum->count = 1;
+		accum->sumx = a->x;
+		accum->precision = a->precision;
+		accum->scale = a->scale;
+		PG_RETURN_POINTER(accum);
+	}
+
+	elog(LOG, "accum: accumstate found");
+	aa = a->x;
+	sumx = accum->sumx;
+
+        dec128_ADD_SUB_precision_scale(accum->precision, accum->scale, a->precision, a->scale, &precision, &scale);
+        if (scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, scale - a->scale);
+        }
+        if (scale > accum->scale) {
+                sumx = dec128_increase_scale_by(sumx, scale - accum->scale);
+        }
+        accum->sumx = dec128_sum(sumx, aa);
+	accum->precision = precision;
+	accum->scale = scale;
+	accum->count++;
+
+	{
+		char output[DEC128_MAX_STRLEN];
+		dec128_to_string(accum->sumx, output, accum->scale);
+		elog(LOG, "accum: count: %ld, sumx=%s", accum->count, output);
+	}
+	PG_RETURN_POINTER(accum);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_combine);
 Datum
 dec128_combine(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_POINTER(NULL);
+        dec128_accumstate_t           *accum1 = (dec128_accumstate_t *) PG_GETARG_POINTER(0);
+        dec128_accumstate_t           *accum2 = (dec128_accumstate_t *) PG_GETARG_POINTER(1);
+	dec128_accumstate_t *accum = (dec128_accumstate_t *) palloc(sizeof(dec128_accumstate_t));
+	decimal128_t sumx1, sumx2;
+	int precision, scale;
+
+	elog(LOG, "combine....");
+
+	sumx1 = accum1->sumx;
+	sumx2 = accum2->sumx;
+
+        dec128_ADD_SUB_precision_scale(accum1->precision, accum1->scale, accum2->precision, accum2->scale, &precision, &scale);
+        if (scale > accum1->scale) {
+                sumx1 = dec128_increase_scale_by(sumx1, scale - accum1->scale);
+        }
+        if (scale > accum2->scale) {
+                sumx2 = dec128_increase_scale_by(sumx2, scale - accum2->scale);
+        }
+        accum->sumx = dec128_sum(sumx1, sumx2);
+	accum->precision = precision;
+	accum->scale = scale;
+	accum->count = accum1->count + accum2->count;
+
+	PG_RETURN_POINTER(accum);
 }
 
+static int calc_precision(decimal128_t value) {
+	char output[DEC128_MAX_STRLEN];
+	if (dec128_cmpeq(value, dec128_from_int64(0))) {
+		return 0;
+	}
+
+	dec128_to_integer_string(value, output);
+	return strlen(output);
+}
+
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_avg);
+Datum
+dec128_avg(PG_FUNCTION_ARGS)
+{
+        dec128_accumstate_t           *accum = (dec128_accumstate_t *) PG_GETARG_POINTER(0);
+	int precision, scale;
+        dec128_t *res = (dec128_t *) palloc(sizeof(dec128_t));
+	dec128_t N;
+
+	elog(LOG, "avg....");
+	N.x = dec128_from_int64(accum->count);
+	N.scale = 0;
+	N.precision = calc_precision(N.x);
+
+        dec128_DIV_precision_scale(accum->precision, accum->scale, N.precision, N.scale, &precision, &scale);
+        res->x = dec128_divide_exact(accum->sumx, accum->scale, N.x, N.scale, precision, scale);
+	res->precision = precision;
+	res->scale = scale;
+        PG_RETURN_POINTER(res);
+}
 
 
