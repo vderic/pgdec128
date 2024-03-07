@@ -155,10 +155,9 @@ dec128_out(PG_FUNCTION_ARGS)
 	dec128_t   *dec = (dec128_t *) PG_GETARG_POINTER(0);
 	char output[DEC128_MAX_STRLEN];
 	char *res = 0;
-
+	*output = 0;
 	dec128_to_string(dec->x, output, dec->scale);
 	res = pstrdup(output);
-
 	PG_RETURN_CSTRING(res);
 }
 
@@ -222,11 +221,31 @@ dec128_recv(PG_FUNCTION_ARGS)
 
 	result = (dec128_t *) palloc(sizeof(dec128_t));
 	lo = (uint64_t) pq_getmsgint64(buf);
-	hi = pq_getmsgint64(buf);
 
-	result->x = dec128_from_hilo(hi, lo);
+	if (precision <= 18) {
+		result->x = dec128_from_int64(lo);
+	} else {
+		hi = pq_getmsgint64(buf);
+		result->x = dec128_from_hilo(hi, lo);
+	}
 	result->precision = precision;
 	result->scale = scale;
+
+	if (is_valid_dec128_typmod(typmod)) {
+		int tgt_precision = dec128_typmod_precision(typmod);
+		int tgt_scale = dec128_typmod_scale(typmod);
+		if (precision > tgt_precision) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("precision in the data is bigger than target precision.")));
+		}
+
+		if (scale > tgt_scale) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("scale in the data is bigger than target scale.")));
+		}
+	}
 
 	PG_RETURN_POINTER(result);
 }
@@ -249,10 +268,12 @@ dec128_send(PG_FUNCTION_ARGS)
 	pq_sendint(&buf, dec->scale, sizeof(int16));
 
 	lo = dec128_low_bits(dec->x);
-	hi = dec128_high_bits(dec->x);
-
 	pq_sendint64(&buf, lo);
-	pq_sendint64(&buf, hi);
+	
+	if (dec->precision > 18) {
+		hi = dec128_high_bits(dec->x);
+		pq_sendint64(&buf, hi);
+	}
 
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
