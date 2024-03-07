@@ -101,12 +101,13 @@ dec128_in(PG_FUNCTION_ARGS)
 	dec->precision = (int16) precision;
 	dec->scale = (int16) scale;
 
+	if (precision > 38) {
+		ereport(ERROR,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+			 errmsg("value is larger precision than max precision 38")));
+	}
+
 	if (! is_valid_dec128_typmod(typmod)) {
-		if (precision > 38) {
-			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("precision is bigger than max precision 38")));
-		}
 		PG_RETURN_POINTER(dec);
 	}
 
@@ -115,28 +116,15 @@ dec128_in(PG_FUNCTION_ARGS)
 
 	if (tgt_precision < precision) {
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("source precision is bigger than target precision")));
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("value has larger precision than target precision %d", tgt_precision)));
 	}
 
 	if (tgt_scale < scale) {
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("source scale is bigger than target scale.  Possible Precision loss.")));
-	}
-
-	if (tgt_scale != scale) {
-		int delta = tgt_scale - scale;
-		int new_precision = precision + delta;
-		if (new_precision > tgt_precision) {
-			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("source precision is bigger than target precision after rescale.")));
-		}
-
-		dec->x = dec128_increase_scale_by(dec->x, delta);
-		dec->scale = (int16) tgt_scale;
-		dec->precision = (int16) new_precision;
+		int delta = scale - tgt_scale;
+		dec->x = dec128_reduce_scale_by(dec->x, delta, true);
+		dec->scale -= delta;
+		dec->precision -= delta;
 	} else {
 		dec->scale = (int16) tgt_scale;
 		dec->precision = (int16) tgt_precision;
@@ -236,14 +224,14 @@ dec128_recv(PG_FUNCTION_ARGS)
 		int tgt_scale = dec128_typmod_scale(typmod);
 		if (precision > tgt_precision) {
 			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("precision in the data is bigger than target precision.")));
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("value has larger precision than target precision.")));
 		}
 
 		if (scale > tgt_scale) {
 			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("scale in the data is bigger than target scale.")));
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("value has larger scale than target scale.")));
 		}
 	}
 
