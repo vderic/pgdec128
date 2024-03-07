@@ -288,3 +288,25 @@ dec128pl(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(res);
 }
 
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128mi);
+Datum
+dec128mi(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        dec128_t *res = (dec128_t *) palloc(sizeof(dec128_t));
+        decimal128_t aa = a->x;
+        decimal128_t bb = b->x;
+
+        dec128_ADD_SUB_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
+        if (res->scale > a->scale) {
+                aa = dec128_increase_scale_by(a->x, res->scale - a->scale);
+        }
+        if (res->scale > b->scale) {
+                bb = dec128_increase_scale_by(b->x, res->scale - b->scale);
+        }
+        res->x = dec128_subtract(aa, bb);
+        PG_RETURN_POINTER(res);
+}
+
+
