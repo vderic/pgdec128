@@ -309,4 +309,27 @@ dec128mi(PG_FUNCTION_ARGS)
         PG_RETURN_POINTER(res);
 }
 
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128mul);
+Datum
+dec128mul(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        dec128_t *res = (dec128_t *) palloc(sizeof(dec128_t));
+        dec128_MUL_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
+        res->x = dec128_multiply(a->x, b->x);
+        PG_RETURN_POINTER(res);
+}
 
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128div);
+Datum
+dec128div(PG_FUNCTION_ARGS)
+{
+        dec128_t           *a = (dec128_t *) PG_GETARG_POINTER(0);
+        dec128_t           *b = (dec128_t *) PG_GETARG_POINTER(1);
+        dec128_t *res = (dec128_t *) palloc(sizeof(dec128_t));
+        dec128_DIV_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
+        res->x = dec128_divide_exact(a->x, a->scale, b->x, b->scale, res->precision, res->scale);
+        PG_RETURN_POINTER(res);
+}
