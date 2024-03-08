@@ -101,9 +101,6 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_accumstate_in);
 Datum dec128_accumstate_in(PG_FUNCTION_ARGS) {
 	char *lit = PG_GETARG_CSTRING(0);
 	dec128_accumstate_t *accum = (dec128_accumstate_t *)palloc0(sizeof(dec128_accumstate_t));
-
-	elog(LOG, "accumstate_in: INIT %s", lit);
-
 	PG_RETURN_POINTER(accum);
 }
 
@@ -497,18 +494,15 @@ Datum dec128_accum(PG_FUNCTION_ARGS) {
 	decimal128_t aa, sumx;
 
 	if (accum == NULL) {
-		elog(LOG, "accum: Null accumstate");
 		accum = (dec128_accumstate_t *)palloc0(sizeof(dec128_accumstate_t));
 	}
 
 	if (accum->count == 0) {
-		elog(LOG, "accum: Count 0 accumstate");
 		accum->count = 1;
 		accum->sumx = *a;
 		PG_RETURN_POINTER(accum);
 	}
 
-	elog(LOG, "accum: accumstate found");
 	aa = a->x;
 	sumx = accum->sumx.x;
 
@@ -525,11 +519,13 @@ Datum dec128_accum(PG_FUNCTION_ARGS) {
 	accum->sumx.scale = scale;
 	accum->count++;
 
+#if 0
 	{
 		char output[DEC128_MAX_STRLEN];
 		dec128_to_string(accum->sumx.x, output, accum->sumx.scale);
 		elog(LOG, "accum: count: %ld, sumx=%s", accum->count, output);
 	}
+#endif
 	PG_RETURN_POINTER(accum);
 }
 
@@ -540,8 +536,6 @@ Datum dec128_combine(PG_FUNCTION_ARGS) {
 	dec128_accumstate_t *accum = (dec128_accumstate_t *)palloc(sizeof(dec128_accumstate_t));
 	decimal128_t sumx1, sumx2;
 	int precision, scale;
-
-	elog(LOG, "combine....");
 
 	sumx1 = accum1->sumx.x;
 	sumx2 = accum2->sumx.x;
@@ -579,7 +573,6 @@ Datum dec128_avg(PG_FUNCTION_ARGS) {
 	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
 	dec128_t N;
 
-	elog(LOG, "avg....");
 	N.x = dec128_from_int64(accum->count);
 	N.scale = 0;
 	N.precision = calc_precision(N.x);
