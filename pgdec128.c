@@ -130,7 +130,7 @@ Datum dec128_in(PG_FUNCTION_ARGS) {
 	if (precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value is larger precision than max precision 38")));
+				errmsg("value is larger precision %d than max precision %d", precision, DEC128_MAX_PRECISION)));
 	}
 
 	if (!is_valid_dec128_typmod(typmod)) {
@@ -143,7 +143,7 @@ Datum dec128_in(PG_FUNCTION_ARGS) {
 	if (tgt_precision < precision) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value has larger precision than target precision %d", tgt_precision)));
+				errmsg("value has larger precision %d than target precision %d", precision, tgt_precision)));
 	}
 
 	if (tgt_scale < scale) {
@@ -345,7 +345,7 @@ Datum dec128pl(PG_FUNCTION_ARGS) {
 	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value overflows in dec128 format. precision > 38")));
+				errmsg("value overflows in dec128 format. precision %d > %d", res->precision, DEC128_MAX_PRECISION)));
 		PG_RETURN_POINTER(NULL);
 	}
 	if (res->scale > a->scale) {
@@ -370,7 +370,7 @@ Datum dec128mi(PG_FUNCTION_ARGS) {
 	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value overflows in dec128 format. precision > 38")));
+				errmsg("value overflows in dec128 format. precision %d > %d", res->precision, DEC128_MAX_PRECISION)));
 		PG_RETURN_POINTER(NULL);
 	}
 	if (res->scale > a->scale) {
@@ -392,7 +392,7 @@ Datum dec128mul(PG_FUNCTION_ARGS) {
 	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value overflows in dec128 format. precision > 38")));
+				errmsg("value overflows in dec128 format. precision %d > %d", res->precision, DEC128_MAX_PRECISION)));
 		PG_RETURN_POINTER(NULL);
 	}
 	res->x = dec128_multiply(a->x, b->x);
@@ -417,7 +417,7 @@ Datum dec128div(PG_FUNCTION_ARGS) {
 	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value overflows in dec128 format. precision > 38")));
+				errmsg("value overflows in dec128 format. precision %d > %d", res->precision, DEC128_MAX_PRECISION)));
 		PG_RETURN_POINTER(NULL);
 	}
 
@@ -442,7 +442,7 @@ Datum dec128mod(PG_FUNCTION_ARGS) {
 	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value overflows in dec128 format. precision > 38")));
+				errmsg("value overflows in dec128 format. precision %d > %d", res->precision, DEC128_MAX_PRECISION)));
 		PG_RETURN_POINTER(NULL);
 	}
 
@@ -589,7 +589,7 @@ Datum dec128_avg(PG_FUNCTION_ARGS) {
 	if (precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				errmsg("value overflows in dec128 format. precision > 38")));
+				errmsg("value overflows in dec128 format. precision %d > %d", precision, DEC128_MAX_PRECISION)));
 		PG_RETURN_POINTER(NULL);
 	}
 	res->x = dec128_divide_exact(accum->sumx.x, accum->sumx.scale, N.x, N.scale, precision, scale);
