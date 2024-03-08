@@ -61,6 +61,16 @@ select cast('12.2334'::double precision as dec128(10,7));
  12.2334000
 (1 row)
 
+select cast(12.23456 as dec128(10, 5));
+  dec128  
+----------
+ 12.23456
+(1 row)
+
+select cast(12.23456 as dec128(6, 5));
+psql:test.sql:19: ERROR:  value overflows in dec128 format. precision 7 > 6
+select cast(12.23456 as dec128(10, 2));
+psql:test.sql:20: ERROR:  value overflows in dec128 format. scale 5 > 2
 copy t to '/tmp/test.bin' (format binary);
 COPY 8
 drop table t;
@@ -89,9 +99,9 @@ CREATE TABLE
 insert into err values ('12.30','0');
 INSERT 0 1
 select a, b, a/b as div from err;
-psql:test.sql:34: ERROR:  division by zero
+psql:test.sql:37: ERROR:  division by zero
 select a, b, a%b as mod from err;
-psql:test.sql:35: ERROR:  division by zero
+psql:test.sql:38: ERROR:  division by zero
 drop table err;
 DROP TABLE
 create temp table err (a dec128(20, 2), b dec128(20,4));
@@ -99,7 +109,7 @@ CREATE TABLE
 insert into err values ('123456789012345678.59','12345678901234567.45');
 INSERT 0 1
 select a, b, a*b from err;
-psql:test.sql:41: ERROR:  value overflows in dec128 format. precision 40 > 38
+psql:test.sql:44: ERROR:  value overflows in dec128 format. precision 40 > 38
 drop table err;
 DROP TABLE
 create temp table t (a dec128(20, 2), b dec128(10,4));

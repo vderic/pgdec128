@@ -15,6 +15,9 @@ select cast('12'::int as dec128(10,2));
 select cast('12'::bigint as dec128(10,2));
 select cast('12.23'::real as dec128(10,4));
 select cast('12.2334'::double precision as dec128(10,7));
+select cast(12.23456 as dec128(10, 5));
+select cast(12.23456 as dec128(6, 5));
+select cast(12.23456 as dec128(10, 2));
 
 copy t to '/tmp/test.bin' (format binary);
 
