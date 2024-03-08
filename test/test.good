@@ -1,11 +1,17 @@
+create extension if not exists pgdec128;
 CREATE EXTENSION
+create temp table t (a dec128(20, 2), b dec128(10,4));
 CREATE TABLE
+insert into t values ('12.30','345.6789'), ('2.55','2.1234'), ('123456789012345678.59','3.45'), ('-12345678901234567.33', '1.3'), 
+('10.03', '10.0300'), (NULL, '3.45'), (NULL, NULL), ('2.34', NULL);
 INSERT 0 8
+select sum(a) as sum, avg(a) as avg, min(a) as min, max(a) as max from t;
           sum          |          avg           |          min          |          max          
 -----------------------+------------------------+-----------------------+-----------------------
  111111110111111138.48 | 18518518351851856.4133 | -12345678901234567.33 | 123456789012345678.59
 (1 row)
 
+select a, b, a+b as plus, a-b as minus, a*b as mul, a/b as div, a%b as mod from t;
            a           |    b     |         plus          |         minus         |           mul           |          div           |   mod   
 -----------------------+----------+-----------------------+-----------------------+-------------------------+------------------------+---------
  12.30                 | 345.6789 | 357.9789              | -333.3789             | 4251.850470             | 0.035582               | 12.3000
@@ -18,6 +24,7 @@ INSERT 0 8
  2.34                  |          |                       |                       |                         |                        | 
 (8 rows)
 
+select a, b, a=b as eq, a<>b as ne, a>b as gt, a<b as lt, a>=b as ge, a<=b as le from t;
            a           |    b     | eq | ne | gt | lt | ge | le 
 -----------------------+----------+----+----+----+----+----+----
  12.30                 | 345.6789 | f  | t  | f  | t  | f  | t
@@ -30,30 +37,62 @@ INSERT 0 8
  2.34                  |          |    |    |    |    |    | 
 (8 rows)
 
+select cast('12'::int as dec128(10,2));
  dec128 
 --------
  12.00
 (1 row)
 
+select cast('12'::bigint as dec128(10,2));
  dec128 
 --------
  12.00
 (1 row)
 
+select cast('12.23'::real as dec128(10,4));
  dec128  
 ---------
  12.2300
 (1 row)
 
+select cast('12.2334'::double precision as dec128(10,7));
    dec128   
 ------------
  12.2334000
 (1 row)
 
+copy t to '/tmp/test.bin' (format binary);
+COPY 8
+drop table t;
 DROP TABLE
+create temp table t (a dec128(20, 2), b dec128(10,4));
 CREATE TABLE
-INSERT 0 1
-ERROR:  division by zero
-ERROR:  division by zero
+copy t from '/tmp/test.bin' (format binary);
+COPY 8
+select * from t;
+           a           |    b     
+-----------------------+----------
+ 12.30                 | 345.6789
+ 2.55                  | 2.1234
+ 123456789012345678.59 | 3.45
+ -12345678901234567.33 | 1.3
+ 10.03                 | 10.0300
+                       | 3.45
+                       | 
+ 2.34                  | 
+(8 rows)
+
+drop table t;
 DROP TABLE
+create temp table err (a dec128(20, 2), b dec128(10,4));
+CREATE TABLE
+insert into err values ('12.30','0');
+INSERT 0 1
+select a, b, a/b as div from err;
+psql:test.sql:34: ERROR:  division by zero
+select a, b, a%b as mod from err;
+psql:test.sql:35: ERROR:  division by zero
+drop table err;
+DROP TABLE
+drop extension pgdec128 cascade;
 DROP EXTENSION

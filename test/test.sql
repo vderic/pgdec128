@@ -16,6 +16,16 @@ select cast('12'::bigint as dec128(10,2));
 select cast('12.23'::real as dec128(10,4));
 select cast('12.2334'::double precision as dec128(10,7));
 
+copy t to '/tmp/test.bin' (format binary);
+
+drop table t;
+
+create temp table t (a dec128(20, 2), b dec128(10,4));
+
+copy t from '/tmp/test.bin' (format binary);
+
+select * from t;
+
 drop table t;
 
 create temp table err (a dec128(20, 2), b dec128(10,4));
