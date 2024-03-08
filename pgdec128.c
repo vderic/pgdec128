@@ -132,7 +132,7 @@ Datum dec128_in(PG_FUNCTION_ARGS) {
 	dec->precision = precision;
 	dec->scale = scale;
 
-	if (precision > 38) {
+	if (precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 				errmsg("value is larger precision than max precision 38")));
@@ -190,27 +190,40 @@ Datum dec128_typmod_in(PG_FUNCTION_ARGS) {
 
 	tl = ArrayGetIntegerTypmods(ta, &n);
 
-	if (n != 2)
+	if (n == 2) {
+
+		precision = tl[0];
+		scale = tl[1];
+
+		if (precision < 1 || precision > DEC128_MAX_PRECISION) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					errmsg("precision must be between 1 and %d", DEC128_MAX_PRECISION)));
+		}
+
+		if (scale < 0 || scale > precision) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					errmsg("scale must be smaller than precision and bigger than 0")));
+		}
+
+		typmod = make_dec128_typmod(precision, scale);
+
+	} else if (n == 1) {
+		precision = tl[0];
+		if (precision < 1 || precision > DEC128_MAX_PRECISION) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					errmsg("precision must be between 1 and %d", DEC128_MAX_PRECISION)));
+		}
+
+		typmod = make_dec128_typmod(precision, 0);
+
+	} else {
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				errmsg("invalid type modifier")));
-
-	precision = tl[0];
-	scale = tl[1];
-
-	if (precision < 0 || precision > 38) {
-		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				errmsg("precision must be between 0 and 38")));
 	}
-
-	if (scale < 0 || scale > precision) {
-		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				errmsg("scale must be smaller than precision and bigger than 0")));
-	}
-
-	typmod = make_dec128_typmod(precision, scale);
 
 	PG_RETURN_INT32(typmod);
 }
@@ -334,7 +347,7 @@ Datum dec128pl(PG_FUNCTION_ARGS) {
 	decimal128_t bb = b->x;
 
 	dec128_ADD_SUB_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
-	if (res->precision > 38) {
+	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 				errmsg("value overflows in dec128 format. precision > 38")));
@@ -359,7 +372,7 @@ Datum dec128mi(PG_FUNCTION_ARGS) {
 	decimal128_t bb = b->x;
 
 	dec128_ADD_SUB_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
-	if (res->precision > 38) {
+	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 				errmsg("value overflows in dec128 format. precision > 38")));
@@ -381,7 +394,7 @@ Datum dec128mul(PG_FUNCTION_ARGS) {
 	dec128_t *b = (dec128_t *)PG_GETARG_POINTER(1);
 	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
 	dec128_MUL_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
-	if (res->precision > 38) {
+	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 				errmsg("value overflows in dec128 format. precision > 38")));
@@ -406,7 +419,7 @@ Datum dec128div(PG_FUNCTION_ARGS) {
 	}
 
 	dec128_DIV_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
-	if (res->precision > 38) {
+	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 				errmsg("value overflows in dec128 format. precision > 38")));
@@ -431,7 +444,7 @@ Datum dec128mod(PG_FUNCTION_ARGS) {
 	}
 
 	dec128_MOD_precision_scale(a->precision, a->scale, b->precision, b->scale, &res->precision, &res->scale);
-	if (res->precision > 38) {
+	if (res->precision > DEC128_MAX_PRECISION) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 				errmsg("value overflows in dec128 format. precision > 38")));
@@ -683,7 +696,7 @@ Datum dec128_cast_from_int32(PG_FUNCTION_ARGS) {
 			PG_RETURN_POINTER(NULL);
 		}
 
-		if (res->precision + scale > 38) {
+		if (res->precision + scale > DEC128_MAX_PRECISION) {
 			ereport(ERROR,
 				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 					errmsg("value overflows dec128 format")));
@@ -715,7 +728,7 @@ Datum dec128_cast_from_int64(PG_FUNCTION_ARGS) {
 			PG_RETURN_POINTER(NULL);
 		}
 
-		if (res->precision + scale > 38) {
+		if (res->precision + scale > DEC128_MAX_PRECISION) {
 			ereport(ERROR,
 				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 					errmsg("value overflows dec128 format")));
