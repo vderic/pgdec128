@@ -1,7 +1,9 @@
 Decimal 128  for PostgreSQL
 =========================================
 
-This PostgreSQL extension implements deimcal 128 in C.  The deicimal library is ported from arrow Decimal library to C.
+This PostgreSQL extension implements deimcal 128 in C.  The decimal library is ported from arrow Decimal library to C.
+
+Visit [pure C arrow decimal128 library] (https://github.com/vderic/decimal) here.
 
 Installation
 ------------
