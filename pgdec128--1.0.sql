@@ -211,6 +211,9 @@ CREATE FUNCTION dec128_cast_from_int32(integer, integer, boolean) RETURNS dec128
 CREATE FUNCTION dec128_cast_from_int64(bigint, integer, boolean) RETURNS dec128
  	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE FUNCTION dec128_cast_from_numeric(numeric, integer, boolean) RETURNS dec128
+ 	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 -- casts
 
 CREATE CAST (dec128 AS bigint)
@@ -233,3 +236,6 @@ CREATE CAST (int AS dec128)
 
 CREATE CAST (bigint AS dec128)
 	WITH FUNCTION dec128_cast_from_int64(bigint, integer, boolean) AS ASSIGNMENT;
+
+CREATE CAST (numeric AS dec128)
+	WITH FUNCTION dec128_cast_from_numeric(numeric, integer, boolean) AS ASSIGNMENT;

@@ -742,3 +742,20 @@ Datum dec128_cast_from_int64(PG_FUNCTION_ARGS) {
 	}
 	PG_RETURN_POINTER(res);
 }
+
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_numeric);
+Datum dec128_cast_from_numeric(PG_FUNCTION_ARGS) {
+	Numeric num = PG_GETARG_NUMERIC(0);
+	int32 typmod = PG_GETARG_INT32(1);
+	char *str;
+	int precision, scale;
+	decimal_status_t s;
+	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
+
+	str = numeric_normalize(num);
+	s = dec128_from_string(str, &res->x, &res->precision, &res->scale);
+	CHECK_DEC128_STATUS(s);
+	PG_RETURN_POINTER(res);
+}
+
