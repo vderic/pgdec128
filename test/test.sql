@@ -9,7 +9,7 @@ select sum(a) as sum, avg(a) as avg, min(a) as min, max(a) as max from t;
 
 select a, b, a+b as plus, a-b as minus, a*b as mul, a/b as div, a%b as mod from t;
 
-select a, b, a=b as eq, a>b as gt, a<b as lt, a>=b as ge, a<=b as le from t;
+select a, b, a=b as eq, a<>b as ne, a>b as gt, a<b as lt, a>=b as ge, a<=b as le from t;
 
 select cast('12'::int as dec128(10,2));
 select cast('12'::bigint as dec128(10,2));
