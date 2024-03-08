@@ -47,7 +47,6 @@ static inline void CHECK_DEC128_STATUS(decimal_status_t s) {
 		ereport(ERROR,
 			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
 				errmsg("dec128 internal error")));
-
 	}
 }
 
@@ -293,10 +292,10 @@ Datum dec128_send(PG_FUNCTION_ARGS) {
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128larger);
 Datum dec128larger(PG_FUNCTION_ARGS) {
-        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
-        dec128_t *b = (dec128_t *)PG_GETARG_POINTER(1);
-        decimal128_t aa = a->x;
-        decimal128_t bb = b->x;
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *b = (dec128_t *)PG_GETARG_POINTER(1);
+	decimal128_t aa = a->x;
+	decimal128_t bb = b->x;
 
 	if (a->scale > b->scale) {
 		bb = dec128_increase_scale_by(bb, a->scale - b->scale);
@@ -305,30 +304,29 @@ Datum dec128larger(PG_FUNCTION_ARGS) {
 	}
 	if (dec128_cmpgt(aa, bb)) {
 		PG_RETURN_POINTER(a);
-	} 
+	}
 
 	PG_RETURN_POINTER(b);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128smaller);
 Datum dec128smaller(PG_FUNCTION_ARGS) {
-        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
-        dec128_t *b = (dec128_t *)PG_GETARG_POINTER(1);
-        decimal128_t aa = a->x;
-        decimal128_t bb = b->x;
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *b = (dec128_t *)PG_GETARG_POINTER(1);
+	decimal128_t aa = a->x;
+	decimal128_t bb = b->x;
 
-        if (a->scale > b->scale) {
-                bb = dec128_increase_scale_by(bb, a->scale - b->scale);
-        } else if (b->scale > a->scale) {
-                aa = dec128_increase_scale_by(aa, b->scale - a->scale);
-        }
-        if (dec128_cmplt(aa, bb)) {
-                PG_RETURN_POINTER(a);
-        }
+	if (a->scale > b->scale) {
+		bb = dec128_increase_scale_by(bb, a->scale - b->scale);
+	} else if (b->scale > a->scale) {
+		aa = dec128_increase_scale_by(aa, b->scale - a->scale);
+	}
+	if (dec128_cmplt(aa, bb)) {
+		PG_RETURN_POINTER(a);
+	}
 
-        PG_RETURN_POINTER(b);
+	PG_RETURN_POINTER(b);
 }
-
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128pl);
 Datum dec128pl(PG_FUNCTION_ARGS) {
@@ -457,31 +455,30 @@ Datum dec128_accum(PG_FUNCTION_ARGS) {
 	if (accum->count == 0) {
 		elog(LOG, "accum: Count 0 accumstate");
 		accum->count = 1;
-		accum->sumx = a->x;
-		accum->precision = a->precision;
-		accum->scale = a->scale;
+		accum->sumx = *a;
 		PG_RETURN_POINTER(accum);
 	}
 
 	elog(LOG, "accum: accumstate found");
 	aa = a->x;
-	sumx = accum->sumx;
+	sumx = accum->sumx.x;
 
-	dec128_ADD_SUB_precision_scale(accum->precision, accum->scale, a->precision, a->scale, &precision, &scale);
+	dec128_ADD_SUB_precision_scale(accum->sumx.precision, accum->sumx.scale,
+		a->precision, a->scale, &precision, &scale);
 	if (scale > a->scale) {
 		aa = dec128_increase_scale_by(a->x, scale - a->scale);
 	}
-	if (scale > accum->scale) {
-		sumx = dec128_increase_scale_by(sumx, scale - accum->scale);
+	if (scale > accum->sumx.scale) {
+		sumx = dec128_increase_scale_by(sumx, scale - accum->sumx.scale);
 	}
-	accum->sumx = dec128_sum(sumx, aa);
-	accum->precision = precision;
-	accum->scale = scale;
+	accum->sumx.x = dec128_sum(sumx, aa);
+	accum->sumx.precision = precision;
+	accum->sumx.scale = scale;
 	accum->count++;
 
 	{
 		char output[DEC128_MAX_STRLEN];
-		dec128_to_string(accum->sumx, output, accum->scale);
+		dec128_to_string(accum->sumx.x, output, accum->sumx.scale);
 		elog(LOG, "accum: count: %ld, sumx=%s", accum->count, output);
 	}
 	PG_RETURN_POINTER(accum);
@@ -497,19 +494,20 @@ Datum dec128_combine(PG_FUNCTION_ARGS) {
 
 	elog(LOG, "combine....");
 
-	sumx1 = accum1->sumx;
-	sumx2 = accum2->sumx;
+	sumx1 = accum1->sumx.x;
+	sumx2 = accum2->sumx.x;
 
-	dec128_ADD_SUB_precision_scale(accum1->precision, accum1->scale, accum2->precision, accum2->scale, &precision, &scale);
-	if (scale > accum1->scale) {
-		sumx1 = dec128_increase_scale_by(sumx1, scale - accum1->scale);
+	dec128_ADD_SUB_precision_scale(accum1->sumx.precision, accum1->sumx.scale,
+		accum2->sumx.precision, accum2->sumx.scale, &precision, &scale);
+	if (scale > accum1->sumx.scale) {
+		sumx1 = dec128_increase_scale_by(sumx1, scale - accum1->sumx.scale);
 	}
-	if (scale > accum2->scale) {
-		sumx2 = dec128_increase_scale_by(sumx2, scale - accum2->scale);
+	if (scale > accum2->sumx.scale) {
+		sumx2 = dec128_increase_scale_by(sumx2, scale - accum2->sumx.scale);
 	}
-	accum->sumx = dec128_sum(sumx1, sumx2);
-	accum->precision = precision;
-	accum->scale = scale;
+	accum->sumx.x = dec128_sum(sumx1, sumx2);
+	accum->sumx.precision = precision;
+	accum->sumx.scale = scale;
 	accum->count = accum1->count + accum2->count;
 
 	PG_RETURN_POINTER(accum);
@@ -537,8 +535,8 @@ Datum dec128_avg(PG_FUNCTION_ARGS) {
 	N.scale = 0;
 	N.precision = calc_precision(N.x);
 
-	dec128_DIV_precision_scale(accum->precision, accum->scale, N.precision, N.scale, &precision, &scale);
-	res->x = dec128_divide_exact(accum->sumx, accum->scale, N.x, N.scale, precision, scale);
+	dec128_DIV_precision_scale(accum->sumx.precision, accum->sumx.scale, N.precision, N.scale, &precision, &scale);
+	res->x = dec128_divide_exact(accum->sumx.x, accum->sumx.scale, N.x, N.scale, precision, scale);
 	res->precision = precision;
 	res->scale = scale;
 	PG_RETURN_POINTER(res);
@@ -549,18 +547,17 @@ Datum dec128_avg(PG_FUNCTION_ARGS) {
  */
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_int64);
 Datum dec128_cast_int64(PG_FUNCTION_ARGS) {
-	dec128_t *a = (dec128_t *) PG_GETARG_POINTER(0);
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
 	//int32 typmod = PG_GETARG_INT32(1);
 	int64 res = 0;
 	res = dec128_to_int64(a->x);
 	PG_RETURN_INT64(res);
-
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_float);
 Datum dec128_cast_float(PG_FUNCTION_ARGS) {
-        dec128_t *a = (dec128_t *) PG_GETARG_POINTER(0);
-        int32 typmod = PG_GETARG_INT32(1);
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	int32 typmod = PG_GETARG_INT32(1);
 	float res = 0;
 	res = dec128_to_float(a->x, a->scale);
 	PG_RETURN_FLOAT4(res);
@@ -568,76 +565,75 @@ Datum dec128_cast_float(PG_FUNCTION_ARGS) {
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_double);
 Datum dec128_cast_double(PG_FUNCTION_ARGS) {
-        dec128_t *a = (dec128_t *) PG_GETARG_POINTER(0);
-        int32 typmod = PG_GETARG_INT32(1);
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	int32 typmod = PG_GETARG_INT32(1);
 	double res = dec128_to_double(a->x, a->scale);
 	PG_RETURN_FLOAT8(res);
 }
 
-
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_float);
 Datum dec128_cast_from_float(PG_FUNCTION_ARGS) {
-        float a = PG_GETARG_FLOAT4(0);
-        int32 typmod = PG_GETARG_INT32(1);
-        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
-        int precision, scale;
+	float a = PG_GETARG_FLOAT4(0);
+	int32 typmod = PG_GETARG_INT32(1);
+	dec128_t *res = (dec128_t *)palloc0(sizeof(dec128_t));
+	int precision, scale;
 	decimal_status_t s;
 
-        if (! is_valid_dec128_typmod(typmod)) {
-                /* max precision for float is 7 and scale 3 */
-                s = dec128_from_float(a, &res->x, 7, 3);
+	if (!is_valid_dec128_typmod(typmod)) {
+		/* max precision for float is 7 and scale 3 */
+		s = dec128_from_float(a, &res->x, 7, 3);
 		CHECK_DEC128_STATUS(s);
 		res->precision = 7;
 		res->scale = 3;
-                PG_RETURN_POINTER(res);
-        }
+		PG_RETURN_POINTER(res);
+	}
 
-        precision = dec128_typmod_precision(typmod);
-        scale = dec128_typmod_scale(typmod);
-        s = dec128_from_double(a, &res->x, precision, scale);
+	precision = dec128_typmod_precision(typmod);
+	scale = dec128_typmod_scale(typmod);
+	s = dec128_from_double(a, &res->x, precision, scale);
 	CHECK_DEC128_STATUS(s);
 
 	res->precision = precision;
 	res->scale = scale;
-        PG_RETURN_POINTER(res);
+	PG_RETURN_POINTER(res);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_double);
 Datum dec128_cast_from_double(PG_FUNCTION_ARGS) {
-        double a = PG_GETARG_FLOAT8(0);
-        int32 typmod = PG_GETARG_INT32(1);
-        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
-        int precision, scale;
+	double a = PG_GETARG_FLOAT8(0);
+	int32 typmod = PG_GETARG_INT32(1);
+	dec128_t *res = (dec128_t *)palloc0(sizeof(dec128_t));
+	int precision, scale;
 	decimal_status_t s;
 
-        if (! is_valid_dec128_typmod(typmod)) {
-                /* max precision for float is 16 and scale 5 */
-                s = dec128_from_double(a, &res->x, 16, 5);
+	if (!is_valid_dec128_typmod(typmod)) {
+		/* max precision for float is 16 and scale 5 */
+		s = dec128_from_double(a, &res->x, 16, 5);
 		CHECK_DEC128_STATUS(s);
 		res->precision = 16;
 		res->scale = 5;
-                PG_RETURN_POINTER(res);
-        }
+		PG_RETURN_POINTER(res);
+	}
 
-        precision = dec128_typmod_precision(typmod);
-        scale = dec128_typmod_scale(typmod);
-        s = dec128_from_double(a, &res->x, precision, scale);
+	precision = dec128_typmod_precision(typmod);
+	scale = dec128_typmod_scale(typmod);
+	s = dec128_from_double(a, &res->x, precision, scale);
 	CHECK_DEC128_STATUS(s);
 	res->precision = precision;
 	res->scale = scale;
-        PG_RETURN_POINTER(res);
+	PG_RETURN_POINTER(res);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_int32);
 Datum dec128_cast_from_int32(PG_FUNCTION_ARGS) {
-        int32 a = PG_GETARG_INT32(0);
-        int32 typmod = PG_GETARG_INT32(1);
-        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
-        res->x = dec128_from_int64(a);
-        res->precision = calc_precision(res->x);
-        res->scale = 0;
-        if (is_valid_dec128_typmod(typmod)) {
-        	int scale = dec128_typmod_scale(typmod);
+	int32 a = PG_GETARG_INT32(0);
+	int32 typmod = PG_GETARG_INT32(1);
+	dec128_t *res = (dec128_t *)palloc0(sizeof(dec128_t));
+	res->x = dec128_from_int64(a);
+	res->precision = calc_precision(res->x);
+	res->scale = 0;
+	if (is_valid_dec128_typmod(typmod)) {
+		int scale = dec128_typmod_scale(typmod);
 		if (scale < 0) {
 			ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -646,9 +642,9 @@ Datum dec128_cast_from_int32(PG_FUNCTION_ARGS) {
 		}
 
 		if (res->precision + scale > 38) {
-	                ereport(ERROR,
-                        	(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-                               	errmsg("value overflows dec128 format")));
+			ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+					errmsg("value overflows dec128 format")));
 			PG_RETURN_POINTER(NULL);
 		}
 
@@ -657,19 +653,19 @@ Datum dec128_cast_from_int32(PG_FUNCTION_ARGS) {
 		res->precision += scale;
 	}
 
-        PG_RETURN_POINTER(res);
+	PG_RETURN_POINTER(res);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_int64);
 Datum dec128_cast_from_int64(PG_FUNCTION_ARGS) {
-        int64 a = PG_GETARG_INT64(0);
-        int32 typmod = PG_GETARG_INT32(1);
-        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
-        res->x = dec128_from_int64(a);
-        res->precision = calc_precision(res->x);
-        res->scale = 0;
-        if (is_valid_dec128_typmod(typmod)) {
-        	int scale = dec128_typmod_scale(typmod);
+	int64 a = PG_GETARG_INT64(0);
+	int32 typmod = PG_GETARG_INT32(1);
+	dec128_t *res = (dec128_t *)palloc0(sizeof(dec128_t));
+	res->x = dec128_from_int64(a);
+	res->precision = calc_precision(res->x);
+	res->scale = 0;
+	if (is_valid_dec128_typmod(typmod)) {
+		int scale = dec128_typmod_scale(typmod);
 		if (scale < 0) {
 			ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -678,9 +674,9 @@ Datum dec128_cast_from_int64(PG_FUNCTION_ARGS) {
 		}
 
 		if (res->precision + scale > 38) {
-	                ereport(ERROR,
-                        	(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-                               	errmsg("value overflows dec128 format")));
+			ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+					errmsg("value overflows dec128 format")));
 			PG_RETURN_POINTER(NULL);
 		}
 
@@ -688,5 +684,5 @@ Datum dec128_cast_from_int64(PG_FUNCTION_ARGS) {
 		res->scale = scale;
 		res->precision += scale;
 	}
-        PG_RETURN_POINTER(res);
+	PG_RETURN_POINTER(res);
 }
