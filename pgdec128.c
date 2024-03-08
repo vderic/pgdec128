@@ -19,11 +19,6 @@
 #include "varatt.h"
 #endif
 
-#if PG_VERSION_NUM < 130000
-#define TYPALIGN_DOUBLE 'd'
-#define TYPALIGN_INT 'i'
-#endif
-
 PG_MODULE_MAGIC;
 
 static inline void CHECK_DEC128_STATUS(decimal_status_t s) {
