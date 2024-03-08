@@ -749,13 +749,31 @@ Datum dec128_cast_from_numeric(PG_FUNCTION_ARGS) {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	int32 typmod = PG_GETARG_INT32(1);
 	char *str;
-	int precision, scale;
 	decimal_status_t s;
 	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
 
 	str = numeric_normalize(num);
 	s = dec128_from_string(str, &res->x, &res->precision, &res->scale);
 	CHECK_DEC128_STATUS(s);
+
+	if (is_valid_dec128_typmod(typmod)) {
+		int precision = dec128_typmod_precision(typmod);
+		int scale = dec128_typmod_scale(typmod);
+
+		if (res->precision > precision) {
+			ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+					errmsg("value overflows in dec128 format. precision %d > %d", res->precision, precision)));
+			PG_RETURN_POINTER(NULL);
+		}
+
+		if (res->scale > scale) {
+			ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+					errmsg("value overflows in dec128 format. scale %d > %d", res->scale, scale)));
+			PG_RETURN_POINTER(NULL);
+		}
+	}
 	PG_RETURN_POINTER(res);
 }
 
