@@ -26,6 +26,31 @@
 
 PG_MODULE_MAGIC;
 
+static inline void CHECK_DEC128_STATUS(decimal_status_t s) {
+	if (s == DEC128_STATUS_SUCCESS) {
+		return;
+	} else if (s == DEC128_STATUS_DIVIDEDBYZERO) {
+		ereport(ERROR,
+			(errcode(ERRCODE_DIVISION_BY_ZERO),
+				errmsg("division by zero")));
+
+	} else if (s == DEC128_STATUS_OVERFLOW) {
+		ereport(ERROR,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				errmsg("value overflows dec128 format")));
+	} else if (s == DEC128_STATUS_RESCALEDATALOSS) {
+		ereport(ERROR,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				errmsg("dec128 rescale data loss")));
+
+	} else {
+		ereport(ERROR,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				errmsg("dec128 internal error")));
+
+	}
+}
+
 /*
  * Initialize index options and variables
  */
@@ -522,9 +547,7 @@ Datum dec128_cast_from_float(PG_FUNCTION_ARGS) {
         if (! is_valid_dec128_typmod(typmod)) {
                 /* max precision for float is 7 and scale 3 */
                 s = dec128_from_float(a, &res->x, 7, 3);
-		if (s != DEC128_STATUS_SUCCESS) {
-
-		}
+		CHECK_DEC128_STATUS(s);
 		res->precision = 7;
 		res->scale = 3;
                 PG_RETURN_POINTER(res);
@@ -533,9 +556,7 @@ Datum dec128_cast_from_float(PG_FUNCTION_ARGS) {
         precision = dec128_typmod_precision(typmod);
         scale = dec128_typmod_scale(typmod);
         s = dec128_from_double(a, &res->x, precision, scale);
-	if (s != DEC128_STATUS_SUCCESS) {
-
-	}
+	CHECK_DEC128_STATUS(s);
 
 	res->precision = precision;
 	res->scale = scale;
@@ -553,9 +574,7 @@ Datum dec128_cast_from_double(PG_FUNCTION_ARGS) {
         if (! is_valid_dec128_typmod(typmod)) {
                 /* max precision for float is 16 and scale 5 */
                 s = dec128_from_double(a, &res->x, 16, 5);
-		if (s != DEC128_STATUS_SUCCESS) {
-
-		}
+		CHECK_DEC128_STATUS(s);
 		res->precision = 16;
 		res->scale = 5;
                 PG_RETURN_POINTER(res);
@@ -564,9 +583,7 @@ Datum dec128_cast_from_double(PG_FUNCTION_ARGS) {
         precision = dec128_typmod_precision(typmod);
         scale = dec128_typmod_scale(typmod);
         s = dec128_from_double(a, &res->x, precision, scale);
-	if (s != DEC128_STATUS_SUCCESS) {
-
-	}
+	CHECK_DEC128_STATUS(s);
 	res->precision = precision;
 	res->scale = scale;
         PG_RETURN_POINTER(res);
