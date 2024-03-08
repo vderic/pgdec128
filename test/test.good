@@ -94,5 +94,13 @@ select a, b, a%b as mod from err;
 psql:test.sql:35: ERROR:  division by zero
 drop table err;
 DROP TABLE
+create temp table err (a dec128(20, 2), b dec128(20,4));
+CREATE TABLE
+insert into err values ('123456789012345678.59','12345678901234567.45');
+INSERT 0 1
+select a, b, a*b from err;
+psql:test.sql:41: ERROR:  value overflows in dec128 format. precision > 38
+drop table err;
+DROP TABLE
 drop extension pgdec128 cascade;
 DROP EXTENSION

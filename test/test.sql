@@ -36,4 +36,9 @@ select a, b, a%b as mod from err;
 
 drop table err;
 
+create temp table err (a dec128(20, 2), b dec128(20,4));
+insert into err values ('123456789012345678.59','12345678901234567.45');
+select a, b, a*b from err;
+drop table err;
+
 drop extension pgdec128 cascade;
