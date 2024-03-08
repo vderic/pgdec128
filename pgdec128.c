@@ -479,3 +479,97 @@ Datum dec128_avg(PG_FUNCTION_ARGS) {
 	res->scale = scale;
 	PG_RETURN_POINTER(res);
 }
+
+/* 
+ * Cast functions
+ */
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_int64);
+Datum dec128_cast_int64(PG_FUNCTION_ARGS) {
+	dec128_t *a = (dec128_t *) PG_GETARG_POINTER(0);
+	//int32 typmod = PG_GETARG_INT32(1);
+	int64 res = 0;
+	res = dec128_to_int64(a->x);
+	PG_RETURN_INT64(res);
+
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_float);
+Datum dec128_cast_float(PG_FUNCTION_ARGS) {
+        dec128_t *a = (dec128_t *) PG_GETARG_POINTER(0);
+        int32 typmod = PG_GETARG_INT32(1);
+	float res = 0;
+	res = dec128_to_float(a->x, a->scale);
+	PG_RETURN_FLOAT4(res);
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_double);
+Datum dec128_cast_double(PG_FUNCTION_ARGS) {
+        dec128_t *a = (dec128_t *) PG_GETARG_POINTER(0);
+        int32 typmod = PG_GETARG_INT32(1);
+	double res = dec128_to_double(a->x, a->scale);
+	PG_RETURN_FLOAT8(res);
+}
+
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_float);
+Datum dec128_cast_from_float(PG_FUNCTION_ARGS) {
+        float a = PG_GETARG_FLOAT4(0);
+        int32 typmod = PG_GETARG_INT32(1);
+        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
+        int precision, scale;
+	decimal_status_t s;
+
+        if (! is_valid_dec128_typmod(typmod)) {
+                /* max precision for float is 7 and scale 3 */
+                s = dec128_from_float(a, &res->x, 7, 3);
+		if (s != DEC128_STATUS_SUCCESS) {
+
+		}
+		res->precision = 7;
+		res->scale = 3;
+                PG_RETURN_POINTER(res);
+        }
+
+        precision = dec128_typmod_precision(typmod);
+        scale = dec128_typmod_scale(typmod);
+        s = dec128_from_double(a, &res->x, precision, scale);
+	if (s != DEC128_STATUS_SUCCESS) {
+
+	}
+
+	res->precision = precision;
+	res->scale = scale;
+        PG_RETURN_POINTER(res);
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_double);
+Datum dec128_cast_from_double(PG_FUNCTION_ARGS) {
+        double a = PG_GETARG_FLOAT8(0);
+        int32 typmod = PG_GETARG_INT32(1);
+        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
+        int precision, scale;
+	decimal_status_t s;
+
+        if (! is_valid_dec128_typmod(typmod)) {
+                /* max precision for float is 16 and scale 5 */
+                s = dec128_from_double(a, &res->x, 16, 5);
+		if (s != DEC128_STATUS_SUCCESS) {
+
+		}
+		res->precision = 16;
+		res->scale = 5;
+                PG_RETURN_POINTER(res);
+        }
+
+        precision = dec128_typmod_precision(typmod);
+        scale = dec128_typmod_scale(typmod);
+        s = dec128_from_double(a, &res->x, precision, scale);
+	if (s != DEC128_STATUS_SUCCESS) {
+
+	}
+	res->precision = precision;
+	res->scale = scale;
+        PG_RETURN_POINTER(res);
+}
+
+

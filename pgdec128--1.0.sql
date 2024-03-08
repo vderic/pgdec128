@@ -169,3 +169,38 @@ CREATE AGGREGATE avg(dec128) (
 	PARALLEL = SAFE
 );
 
+
+-- cast functions
+
+CREATE FUNCTION dec128_cast_int64(dec128, integer, boolean) RETURNS bigint
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_cast_float(dec128, integer, boolean) RETURNS real
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_cast_double(dec128, integer, boolean) RETURNS double precision
+	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_cast_from_float(real, integer, boolean) RETURNS dec128
+ 	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_cast_from_double(double precision, integer, boolean) RETURNS dec128
+ 	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+
+-- casts
+
+CREATE CAST (dec128 AS bigint)
+	WITH FUNCTION dec128_cast_int64(dec128, integer, boolean) AS IMPLICIT;
+
+CREATE CAST (dec128 AS real)
+	WITH FUNCTION dec128_cast_float(dec128, integer, boolean) AS IMPLICIT;
+
+CREATE CAST (dec128 AS double precision)
+	WITH FUNCTION dec128_cast_double(dec128, integer, boolean) AS IMPLICIT;
+
+CREATE CAST (real AS dec128)
+	WITH FUNCTION dec128_cast_from_float(real, integer, boolean) AS ASSIGNMENT;
+
+CREATE CAST (double precision AS dec128)
+	WITH FUNCTION dec128_cast_from_double(double precision, integer, boolean) AS ASSIGNMENT;
