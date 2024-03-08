@@ -187,6 +187,11 @@ CREATE FUNCTION dec128_cast_from_float(real, integer, boolean) RETURNS dec128
 CREATE FUNCTION dec128_cast_from_double(double precision, integer, boolean) RETURNS dec128
  	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE FUNCTION dec128_cast_from_int32(integer, integer, boolean) RETURNS dec128
+ 	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION dec128_cast_from_int64(bigint, integer, boolean) RETURNS dec128
+ 	AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 -- casts
 
@@ -204,3 +209,9 @@ CREATE CAST (real AS dec128)
 
 CREATE CAST (double precision AS dec128)
 	WITH FUNCTION dec128_cast_from_double(double precision, integer, boolean) AS ASSIGNMENT;
+
+CREATE CAST (int AS dec128)
+	WITH FUNCTION dec128_cast_from_int32(int, integer, boolean) AS ASSIGNMENT;
+
+CREATE CAST (bigint AS dec128)
+	WITH FUNCTION dec128_cast_from_int64(bigint, integer, boolean) AS ASSIGNMENT;

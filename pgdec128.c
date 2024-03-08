@@ -589,4 +589,65 @@ Datum dec128_cast_from_double(PG_FUNCTION_ARGS) {
         PG_RETURN_POINTER(res);
 }
 
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_int32);
+Datum dec128_cast_from_int32(PG_FUNCTION_ARGS) {
+        int32 a = PG_GETARG_INT32(0);
+        int32 typmod = PG_GETARG_INT32(1);
+        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
+        res->x = dec128_from_int64(a);
+        res->precision = calc_precision(res->x);
+        res->scale = 0;
+        if (is_valid_dec128_typmod(typmod)) {
+        	int scale = dec128_typmod_scale(typmod);
+		if (scale < 0) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					errmsg("scale must be positive integer")));
+			PG_RETURN_POINTER(NULL);
+		}
 
+		if (res->precision + scale > 38) {
+	                ereport(ERROR,
+                        	(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+                               	errmsg("value overflows dec128 format")));
+			PG_RETURN_POINTER(NULL);
+		}
+
+		res->x = dec128_increase_scale_by(res->x, scale);
+		res->scale = scale;
+		res->precision += scale;
+	}
+
+        PG_RETURN_POINTER(res);
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128_cast_from_int64);
+Datum dec128_cast_from_int64(PG_FUNCTION_ARGS) {
+        int64 a = PG_GETARG_INT64(0);
+        int32 typmod = PG_GETARG_INT32(1);
+        dec128_t *res = (dec128_t *) palloc0(sizeof(dec128_t));
+        res->x = dec128_from_int64(a);
+        res->precision = calc_precision(res->x);
+        res->scale = 0;
+        if (is_valid_dec128_typmod(typmod)) {
+        	int scale = dec128_typmod_scale(typmod);
+		if (scale < 0) {
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					errmsg("scale must be positive integer")));
+			PG_RETURN_POINTER(NULL);
+		}
+
+		if (res->precision + scale > 38) {
+	                ereport(ERROR,
+                        	(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+                               	errmsg("value overflows dec128 format")));
+			PG_RETURN_POINTER(NULL);
+		}
+
+		res->x = dec128_increase_scale_by(res->x, scale);
+		res->scale = scale;
+		res->precision += scale;
+	}
+        PG_RETURN_POINTER(res);
+}
