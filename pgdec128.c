@@ -591,6 +591,12 @@ Datum dec128_avg(PG_FUNCTION_ARGS) {
 	N.precision = calc_precision(N.x);
 
 	dec128_DIV_precision_scale(accum->sumx.precision, accum->sumx.scale, N.precision, N.scale, &precision, &scale);
+	if (precision > DEC128_MAX_PRECISION) {
+		ereport(ERROR,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				errmsg("value overflows in dec128 format. precision > 38")));
+		PG_RETURN_POINTER(NULL);
+	}
 	res->x = dec128_divide_exact(accum->sumx.x, accum->sumx.scale, N.x, N.scale, precision, scale);
 	res->precision = precision;
 	res->scale = scale;
