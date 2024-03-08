@@ -16,5 +16,14 @@ select cast('12'::bigint as dec128(10,2));
 select cast('12.23'::real as dec128(10,4));
 select cast('12.2334'::double precision as dec128(10,7));
 
+drop table t;
+
+create temp table err (a dec128(20, 2), b dec128(10,4));
+
+insert into err values ('12.30','0');
+select a, b, a/b as div from err;
+select a, b, a%b as mod from err;
+
+drop table err;
 
 drop extension pgdec128 cascade;

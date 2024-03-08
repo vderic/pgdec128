@@ -50,7 +50,10 @@ INSERT 0 8
  12.2334000
 (1 row)
 
-NOTICE:  drop cascades to 2 other objects
-DETAIL:  drop cascades to column b of table t
-drop cascades to column a of table t
+DROP TABLE
+CREATE TABLE
+INSERT 0 1
+ERROR:  division by zero
+ERROR:  division by zero
+DROP TABLE
 DROP EXTENSION
