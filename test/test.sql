@@ -7,7 +7,7 @@ insert into t values ('12.30','345.6789'), ('2.55','2.1234'), ('1234567890123456
 
 select sum(a) as sum, avg(a) as avg, min(a) as min, max(a) as max from t;
 
-select a, b, a+b as plus, a-b as minus, a*b as mul, a/b as div, a%b as mod from t;
+select a, b, -a as um, +a as up, a+b as plus, a-b as minus, a*b as mul, a/b as div, a%b as mod from t;
 
 select a, b, a=b as eq, a<>b as ne, a>b as gt, a<b as lt, a>=b as ge, a<=b as le from t;
 
@@ -51,7 +51,7 @@ insert into t values (12.30,345.6789), (2.55,2.1234), (123456789012345678.59,3.4
 
 select sum(a) as sum, avg(a) as avg, min(a) as min, max(a) as max from t;
 
-select a, b, a+b as plus, a-b as minus, a*b as mul, a/b as div, a%b as mod from t;
+select a, b, -a as um, +a as up, a+b as plus, a-b as minus, a*b as mul, a/b as div, a%b as mod from t;
 
 select a, b, a=b as eq, a<>b as ne, a>b as gt, a<b as lt, a>=b as ge, a<=b as le from t;
 

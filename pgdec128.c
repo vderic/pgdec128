@@ -295,6 +295,27 @@ Datum dec128_send(PG_FUNCTION_ARGS) {
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
 
+/*
+ * unary minus
+ */
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128um);
+Datum dec128um(PG_FUNCTION_ARGS) {
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
+	*res = *a;
+	res->x = dec128_negate(res->x);
+	PG_RETURN_POINTER(res);
+}
+
+/*
+ * unary plus
+ */
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128up);
+Datum dec128up(PG_FUNCTION_ARGS) {
+        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+        PG_RETURN_POINTER(a);
+}
+
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128larger);
 Datum dec128larger(PG_FUNCTION_ARGS) {
 	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
