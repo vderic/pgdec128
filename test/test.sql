@@ -18,6 +18,10 @@ select cast('12.2334'::double precision as dec128(10,7));
 select cast(12.23456 as dec128(10, 5));
 select cast(12.23456 as dec128(6, 5));
 select cast(12.23456 as dec128(10, 2));
+select 128::dec128(5) & 18::dec128(5);
+select 128::dec128(5) | 18::dec128(5);
+select 128::dec128(5) >> 1;
+select 128::dec128(5) << 2;
 
 copy t to '/tmp/test.bin' (format binary);
 
