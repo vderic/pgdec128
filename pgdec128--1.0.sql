@@ -111,8 +111,7 @@ CREATE OPERATOR + (
 );
 
 CREATE OPERATOR - (
-	LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128mi,
-	COMMUTATOR = -
+	LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128mi
 );
 
 CREATE OPERATOR - (
@@ -125,13 +124,11 @@ CREATE OPERATOR * (
 );
 
 CREATE OPERATOR / (
-	LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128div,
-	COMMUTATOR = /
+	LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128div
 );
 
 CREATE OPERATOR % (
-	LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128mod,
-	COMMUTATOR = %
+	LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128mod
 );
 
 CREATE OPERATOR = (
@@ -142,13 +139,13 @@ CREATE OPERATOR = (
 
 CREATE OPERATOR < (
         LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128lt,
-        COMMUTATOR = < , NEGATOR = >= ,
+        COMMUTATOR = > , NEGATOR = >= ,
         RESTRICT = scalarltsel, JOIN = scalarltjoinsel
 );
 
 CREATE OPERATOR <= (
         LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128le,
-        COMMUTATOR = <= , NEGATOR = > ,
+        COMMUTATOR = >= , NEGATOR = > ,
         RESTRICT = scalarlesel, JOIN = scalarlejoinsel
 );
 
@@ -160,13 +157,13 @@ CREATE OPERATOR <> (
 
 CREATE OPERATOR >= (
         LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128ge,
-        COMMUTATOR = >= , NEGATOR = < ,
+        COMMUTATOR = <= , NEGATOR = < ,
         RESTRICT = scalargesel, JOIN = scalargejoinsel
 );
 
 CREATE OPERATOR > (
         LEFTARG = dec128, RIGHTARG = dec128, PROCEDURE = dec128gt,
-        COMMUTATOR = > , NEGATOR = <= ,
+        COMMUTATOR = < , NEGATOR = <= ,
         RESTRICT = scalargtsel, JOIN = scalargtjoinsel
 );
 
