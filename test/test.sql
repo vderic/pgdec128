@@ -22,6 +22,9 @@ select 128::dec128(5) & 18::dec128(5);
 select 128::dec128(5) | 18::dec128(5);
 select 128::dec128(5) >> 1;
 select 128::dec128(5) << 2;
+select dec128ceil(128.1234::dec128(8,4));
+select dec128abs(128.1234::dec128(8,4));
+select dec128abs(-128.1234::dec128(8,4));
 
 copy t to '/tmp/test.bin' (format binary);
 

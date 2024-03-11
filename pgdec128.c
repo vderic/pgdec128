@@ -417,6 +417,33 @@ Datum dec128shr(PG_FUNCTION_ARGS) {
 	PG_RETURN_POINTER(res);
 }
 
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128floor);
+Datum dec128floor(PG_FUNCTION_ARGS) {
+        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
+	*res = *a;
+	res->x = dec128_floor(res->x, res->scale);
+        PG_RETURN_POINTER(res);
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128ceil);
+Datum dec128ceil(PG_FUNCTION_ARGS) {
+        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
+	*res = *a;
+	res->x = dec128_ceil(res->x, res->scale);
+        PG_RETURN_POINTER(res);
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128abs);
+Datum dec128abs(PG_FUNCTION_ARGS) {
+        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
+	*res = *a;
+	res->x = dec128_abs(res->x);
+        PG_RETURN_POINTER(res);
+}
+
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128pl);
 Datum dec128pl(PG_FUNCTION_ARGS) {
 	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
