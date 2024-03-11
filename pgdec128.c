@@ -23,11 +23,16 @@ PG_MODULE_MAGIC;
 
 static int calc_precision(decimal128_t value) {
 	char output[DEC128_MAX_STRLEN];
+	int len = 0;
 	if (dec128_cmpeq(value, dec128_from_int64(0))) {
 		return 0;
 	}
 	dec128_to_integer_string(value, output);
-	return strlen(output);
+	len = strlen(output);
+	if (*output == '-') {
+		len--;
+	}
+	return len;
 }
 
 static inline void CHECK_DEC128_STATUS(decimal_status_t s) {
@@ -419,29 +424,40 @@ Datum dec128shr(PG_FUNCTION_ARGS) {
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128floor);
 Datum dec128floor(PG_FUNCTION_ARGS) {
-        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
 	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
 	*res = *a;
 	res->x = dec128_floor(res->x, res->scale);
-        PG_RETURN_POINTER(res);
+	PG_RETURN_POINTER(res);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128ceil);
 Datum dec128ceil(PG_FUNCTION_ARGS) {
-        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
 	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
 	*res = *a;
 	res->x = dec128_ceil(res->x, res->scale);
-        PG_RETURN_POINTER(res);
+	PG_RETURN_POINTER(res);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128abs);
 Datum dec128abs(PG_FUNCTION_ARGS) {
-        dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
 	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
 	*res = *a;
 	res->x = dec128_abs(res->x);
-        PG_RETURN_POINTER(res);
+	PG_RETURN_POINTER(res);
+}
+
+PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128round);
+Datum dec128round(PG_FUNCTION_ARGS) {
+	dec128_t *a = (dec128_t *)PG_GETARG_POINTER(0);
+	int new_scale = PG_GETARG_INT32(1);
+	dec128_t *res = (dec128_t *)palloc(sizeof(dec128_t));
+	*res = *a;
+	res->x = dec128_round(res->x, res->scale, new_scale);
+	res->precision = calc_precision(res->x);
+	PG_RETURN_POINTER(res);
 }
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(dec128pl);

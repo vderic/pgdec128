@@ -25,6 +25,7 @@ select 128::dec128(5) << 2;
 select ceil(128.1234::dec128(8,4));
 select floor(128.1234::dec128(8,4));
 select abs(-128.1234::dec128(8,4));
+select round(-128.1234::dec128(8,4), 2);
 
 copy t to '/tmp/test.bin' (format binary);
 
