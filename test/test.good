@@ -95,21 +95,21 @@ select 128::dec128(5) << 2;
  512
 (1 row)
 
-select dec128ceil(128.1234::dec128(8,4));
- dec128ceil 
-------------
+select ceil(128.1234::dec128(8,4));
+   ceil   
+----------
  129.0000
 (1 row)
 
-select dec128abs(128.1234::dec128(8,4));
- dec128abs 
------------
- 128.1234
+select floor(128.1234::dec128(8,4));
+  floor   
+----------
+ 128.0000
 (1 row)
 
-select dec128abs(-128.1234::dec128(8,4));
- dec128abs 
------------
+select abs(-128.1234::dec128(8,4));
+   abs    
+----------
  128.1234
 (1 row)
 
